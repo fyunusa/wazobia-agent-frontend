@@ -4,16 +4,38 @@ import { chatApi } from '../services/api'
 import type { Message } from '../types'
 import MessageBubble from './MessageBubble'
 import WelcomeScreen from './WelcomeScreen'
+import AuthModal from './AuthModal'
 
 interface ChatInterfaceProps {
   preferredLanguages: string[]
+  user: any
+  onUserUpdate: (user: any) => void
 }
 
-export default function ChatInterface({ preferredLanguages }: ChatInterfaceProps) {
+const MAX_ANONYMOUS_MESSAGES = 5
+
+export default function ChatInterface({ preferredLanguages, user, onUserUpdate }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [anonymousMessageCount, setAnonymousMessageCount] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('auth_token')
+    const userData = localStorage.getItem('user_data')
+    if (token && userData) {
+      onUserUpdate(JSON.parse(userData))
+    }
+    
+    // Load anonymous message count
+    const count = localStorage.getItem('anonymous_message_count')
+    if (count) {
+      setAnonymousMessageCount(parseInt(count))
+    }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -23,10 +45,25 @@ export default function ChatInterface({ preferredLanguages }: ChatInterfaceProps
     scrollToBottom()
   }, [messages])
 
+  const handleAuthSuccess = (userData: any, token: string) => {
+    localStorage.setItem('auth_token', token)
+    localStorage.setItem('user_data', JSON.stringify(userData))
+    localStorage.removeItem('anonymous_message_count') // Reset count
+    onUserUpdate(userData)
+    setAnonymousMessageCount(0)
+    setShowAuthModal(false)
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!input.trim() || loading) return
+
+    // Check if anonymous user exceeded limit
+    if (!user && anonymousMessageCount >= MAX_ANONYMOUS_MESSAGES) {
+      setShowAuthModal(true)
+      return
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -38,6 +75,13 @@ export default function ChatInterface({ preferredLanguages }: ChatInterfaceProps
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setLoading(true)
+
+    // Increment anonymous message count
+    if (!user) {
+      const newCount = anonymousMessageCount + 1
+      setAnonymousMessageCount(newCount)
+      localStorage.setItem('anonymous_message_count', newCount.toString())
+    }
 
     try {
       const response = await chatApi.sendMessage(input.trim(), [], preferredLanguages)
@@ -53,13 +97,18 @@ export default function ChatInterface({ preferredLanguages }: ChatInterfaceProps
       }
 
       setMessages(prev => [...prev, assistantMessage])
+      
+      // Show auth modal after 5 messages
+      if (!user && anonymousMessageCount + 1 >= MAX_ANONYMOUS_MESSAGES) {
+        setTimeout(() => setShowAuthModal(true), 1000)
+      }
     } catch (error) {
       console.error('Error sending message:', error)
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please make sure the API server is running on http://localhost:8001',
+        content: 'Sorry, I encountered an error. Please try again later.',
         timestamp: new Date()
       }
       
@@ -111,6 +160,16 @@ export default function ChatInterface({ preferredLanguages }: ChatInterfaceProps
       {/* Input Area */}
       <div className="frosted border-t border-white/60 p-4 relative z-10">
         <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto">
+          {/* Anonymous message limit warning */}
+          {!user && anonymousMessageCount >= MAX_ANONYMOUS_MESSAGES - 2 && anonymousMessageCount < MAX_ANONYMOUS_MESSAGES && (
+            <div className="mb-3 p-3 bg-warm-50 border border-warm-200 rounded-xl text-sm text-warm-700">
+              ⚠️ You have {MAX_ANONYMOUS_MESSAGES - anonymousMessageCount} message{MAX_ANONYMOUS_MESSAGES - anonymousMessageCount !== 1 ? 's' : ''} left. 
+              <button onClick={() => setShowAuthModal(true)} className="ml-1 font-semibold hover:underline">
+                Sign up for unlimited access
+              </button>
+            </div>
+          )}
+          
           <div className="flex gap-3">
             <div className="flex-1 relative">
               <input
@@ -154,6 +213,13 @@ export default function ChatInterface({ preferredLanguages }: ChatInterfaceProps
           </div>
         </form>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   )
 }

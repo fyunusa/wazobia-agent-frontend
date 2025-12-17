@@ -17,10 +17,13 @@ const api = axios.create({
 
 export const chatApi = {
   sendMessage: async (message: string, conversationHistory?: any[], preferredLanguages?: string[]): Promise<ChatResponse> => {
+    const token = localStorage.getItem('auth_token')
     const response = await api.post('/chat', {
       message,
       conversation_history: conversationHistory || [],
       preferred_languages: preferredLanguages && !preferredLanguages.includes('auto') ? preferredLanguages : undefined
+    }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
     return response.data
   },
@@ -42,6 +45,73 @@ export const chatApi = {
 
   healthCheck: async () => {
     const response = await api.get('/health')
+    return response.data
+  }
+}
+
+export const authApi = {
+  signup: async (email: string, username: string, password: string) => {
+    const response = await api.post('/auth/signup', { email, username, password })
+    return response.data
+  },
+
+  login: async (email: string, password: string) => {
+    const response = await api.post('/auth/login', { email, password })
+    return response.data
+  },
+
+  logout: async () => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      await api.post('/auth/logout', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    }
+  },
+
+  getMe: async () => {
+    const token = localStorage.getItem('auth_token')
+    if (!token) return null
+    const response = await api.get('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.data
+  }
+}
+
+export const conversationApi = {
+  getConversations: async () => {
+    const token = localStorage.getItem('auth_token')
+    if (!token) return []
+    const response = await api.get('/conversations/', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.data
+  },
+
+  getStats: async () => {
+    const token = localStorage.getItem('auth_token')
+    if (!token) return null
+    const response = await api.get('/conversations/stats', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.data
+  },
+
+  createConversation: async (title: string) => {
+    const token = localStorage.getItem('auth_token')
+    const response = await api.post('/conversations/', 
+      { title },
+      { headers: { Authorization: `Bearer ${token}` }}
+    )
+    return response.data
+  },
+
+  getMessages: async (conversationId: number) => {
+    const token = localStorage.getItem('auth_token')
+    const response = await api.get(`/conversations/${conversationId}/messages`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     return response.data
   }
 }

@@ -1,10 +1,15 @@
-import { Menu, Globe, Sparkles } from 'lucide-react'
+import { Menu, Globe, Sparkles, User, LogOut } from 'lucide-react'
+import { useState } from 'react'
 
 interface HeaderProps {
   onMenuClick: () => void
+  user: any
+  onLogout: () => void
 }
 
-export default function Header({ onMenuClick }: HeaderProps) {
+export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
+  const [showUserMenu, setShowUserMenu] = useState(false)
+
   return (
     <header className="frosted border-b border-white/60 shadow-soft sticky top-0 z-50">
       <div className="px-4 py-3 flex items-center justify-between">
@@ -41,6 +46,39 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="w-2 h-2 bg-accent-500 rounded-full animate-pulse shadow-glow"></div>
             <span className="text-sm font-semibold text-primary-700">Online</span>
           </div>
+
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full hover:shadow-lg transition-all duration-300 hover:scale-105"
+              >
+                <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-semibold">{user.username}</span>
+              </button>
+
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-2 border-b border-neutral-100">
+                    <p className="text-sm font-semibold text-neutral-900">{user.username}</p>
+                    <p className="text-xs text-neutral-500">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      onLogout()
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

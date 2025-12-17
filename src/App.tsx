@@ -1,11 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ChatInterface from './components/ChatInterface'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
+import { authApi } from './services/api'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [preferredLanguages, setPreferredLanguages] = useState<string[]>(['auto'])
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    // Check if user is logged in
+    const userData = localStorage.getItem('user_data')
+    if (userData) {
+      setUser(JSON.parse(userData))
+    }
+  }, [])
+
+  const handleLogout = async () => {
+    await authApi.logout()
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_data')
+    setUser(null)
+  }
 
   const handleLanguageToggle = (langCode: string) => {
     setPreferredLanguages(prev => {
@@ -29,7 +46,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} user={user} onLogout={handleLogout} />
       
       <div className="flex-1 flex overflow-hidden">
         <Sidebar 
@@ -37,10 +54,11 @@ function App() {
           onClose={() => setSidebarOpen(false)}
           preferredLanguages={preferredLanguages}
           onLanguageToggle={handleLanguageToggle}
+          user={user}
         />
         
         <main className="flex-1 flex flex-col">
-          <ChatInterface preferredLanguages={preferredLanguages} />
+          <ChatInterface preferredLanguages={preferredLanguages} user={user} onUserUpdate={setUser} />
         </main>
       </div>
     </div>

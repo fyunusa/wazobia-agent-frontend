@@ -1,16 +1,46 @@
-import { X, Languages, Sparkles, Zap, Shield, MessageCircle, Globe2, Check } from 'lucide-react'
+import { X, Languages, Sparkles, Zap, Shield, MessageCircle, Globe2, Check, Clock, MessageSquare } from 'lucide-react'
 import { LANGUAGES } from '../utils/languages'
+import { useEffect, useState } from 'react'
+import { conversationApi } from '../services/api'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
   preferredLanguages: string[]
   onLanguageToggle: (langCode: string) => void
+  user: any
 }
 
-export default function Sidebar({ isOpen, onClose, preferredLanguages, onLanguageToggle }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, preferredLanguages, onLanguageToggle, user }: SidebarProps) {
   const isAutoMode = preferredLanguages.includes('auto')
   const isMixedMode = !isAutoMode && preferredLanguages.length > 1
+  const [conversations, setConversations] = useState<any[]>([])
+  const [stats, setStats] = useState<any>(null)
+  
+  useEffect(() => {
+    if (user) {
+      loadConversations()
+      loadStats()
+    }
+  }, [user])
+
+  const loadConversations = async () => {
+    try {
+      const data = await conversationApi.getConversations()
+      setConversations(data)
+    } catch (error) {
+      console.error('Failed to load conversations:', error)
+    }
+  }
+
+  const loadStats = async () => {
+    try {
+      const data = await conversationApi.getStats()
+      setStats(data)
+    } catch (error) {
+      console.error('Failed to load stats:', error)
+    }
+  }
   
   return (
     <>
@@ -49,6 +79,59 @@ export default function Sidebar({ isOpen, onClose, preferredLanguages, onLanguag
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-5 space-y-6 relative z-10">
+            {/* User Conversations History */}
+            {user && conversations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-warm-500 to-primary-500 rounded-xl flex items-center justify-center shadow-lg shadow-warm-500/30">
+                    <MessageSquare className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                      Your Chats
+                    </h3>
+                    {stats && (
+                      <p className="text-xs text-neutral-500">
+                        {stats.conversation_count}/{stats.max_conversations} chats • {stats.message_count} messages
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      className="p-3 rounded-xl bg-white/80 backdrop-blur-sm border border-neutral-200 hover:border-primary-300 hover:shadow-md transition-all duration-300 cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-neutral-900 truncate group-hover:text-primary-600 transition-colors">
+                            {conv.title}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-neutral-500 mt-0.5">
+                            <Clock className="w-3 h-3" />
+                            <span>{new Date(conv.updated_at).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>{conv.message_count} msgs</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {stats && !stats.can_create_conversation && (
+                  <div className="mt-3 p-3 bg-warm-50 border border-warm-200 rounded-xl">
+                    <p className="text-xs text-warm-700 leading-relaxed">
+                      ⚠️ You've reached the limit of {stats.max_conversations} conversations. Upgrade for unlimited access.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Supported Languages */}
             <div>
               <div className="flex items-center gap-2 mb-3">
