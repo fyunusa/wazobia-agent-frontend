@@ -13,6 +13,7 @@ interface ChatInterfaceProps {
 }
 
 const MAX_ANONYMOUS_MESSAGES = 5
+const MAX_INPUT_LENGTH = 1000
 
 export default function ChatInterface({ preferredLanguages, user, onUserUpdate }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -175,8 +176,9 @@ export default function ChatInterface({ preferredLanguages, user, onUserUpdate }
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT_LENGTH))}
                 placeholder="Type your message in any language..."
+                maxLength={MAX_INPUT_LENGTH}
                 className="input-field w-full pr-12"
                 disabled={loading}
               />
@@ -184,7 +186,7 @@ export default function ChatInterface({ preferredLanguages, user, onUserUpdate }
             </div>
             <button
               type="submit"
-              disabled={loading || !input.trim()}
+              disabled={loading || !input.trim() || input.length >= MAX_INPUT_LENGTH}
               className="btn-primary px-6 flex items-center gap-2 min-w-[120px] justify-center"
             >
               {loading ? (
@@ -206,6 +208,9 @@ export default function ChatInterface({ preferredLanguages, user, onUserUpdate }
               Supports Hausa, Yoruba, Nigerian Pidgin, and English
             </p>
             <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${input.length >= MAX_INPUT_LENGTH * 0.9 ? 'text-warm-600' : 'text-neutral-500'}`}>
+                {input.length} / {MAX_INPUT_LENGTH}
+              </span>
               <div className="badge badge-primary text-xs">
                 🇳🇬 Nigerian Languages
               </div>
