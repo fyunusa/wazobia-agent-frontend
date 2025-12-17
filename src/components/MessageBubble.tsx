@@ -1,4 +1,4 @@
-import { User, Bot, Languages, X, Sparkles, Tag } from 'lucide-react'
+import { User, Bot, Languages, X, Tag } from 'lucide-react'
 import { useState } from 'react'
 import type { Message } from '../types'
 import { getLanguageInfo } from '../utils/languages'
