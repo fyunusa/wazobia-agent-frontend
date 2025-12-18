@@ -14,12 +14,23 @@ function App() {
   useEffect(() => {
     // Check backend health on mount
     const initializeBackend = async () => {
-      const isHealthy = await waitForBackend()
-      setIsBackendWaking(false)
+      const startTime = Date.now()
+      const minDisplayTime = 12000 // Show for at least 12 seconds (10-15 range)
       
-      if (!isHealthy) {
-        alert('Unable to connect to backend after multiple attempts. Please try refreshing the page.')
-      }
+      const isHealthy = await waitForBackend()
+      
+      // Calculate remaining time to show the modal
+      const elapsedTime = Date.now() - startTime
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime)
+      
+      // Wait for the remaining time before hiding modal
+      setTimeout(() => {
+        setIsBackendWaking(false)
+        
+        if (!isHealthy) {
+          alert('Unable to connect to backend after multiple attempts. Please try refreshing the page.')
+        }
+      }, remainingTime)
     }
 
     initializeBackend()
