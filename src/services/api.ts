@@ -101,11 +101,16 @@ export const authApi = {
   },
 
   logout: async () => {
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      await api.post('/auth/logout', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (token) {
+        await api.post('/auth/logout', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      }
+    } catch (error) {
+      // Ignore logout errors - still clear local storage
+      console.error('Logout error:', error)
     }
   },
 

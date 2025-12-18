@@ -1,13 +1,14 @@
-import { Menu, Globe, Sparkles, User, LogOut } from 'lucide-react'
+import { Menu, Globe, Sparkles, User, LogOut, LogIn } from 'lucide-react'
 import { useState } from 'react'
 
 interface HeaderProps {
   onMenuClick: () => void
   user: any
   onLogout: () => void
+  onSignInClick: () => void
 }
 
-export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
+export default function Header({ onMenuClick, user, onLogout, onSignInClick }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   return (
@@ -46,6 +47,16 @@ export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
             <div className="w-2 h-2 bg-accent-500 rounded-full animate-pulse shadow-glow"></div>
             <span className="text-sm font-semibold text-primary-700">Online</span>
           </div>
+
+          {!user && (
+            <button
+              onClick={onSignInClick}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full hover:shadow-lg transition-all duration-300 hover:scale-105 font-semibold"
+            >
+              <LogIn className="w-4 h-4" />
+              <span className="text-sm">Sign In</span>
+            </button>
+          )}
 
           {user && (
             <div className="relative">

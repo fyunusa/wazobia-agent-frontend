@@ -3,6 +3,8 @@ import ChatInterface from './components/ChatInterface'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import BackendWakeupModal from './components/BackendWakeupModal'
+import AuthModal from './components/AuthModal'
+import AdminDashboard from './components/AdminDashboard'
 import { authApi, waitForBackend } from './services/api'
 
 function App() {
@@ -10,6 +12,8 @@ function App() {
   const [preferredLanguages, setPreferredLanguages] = useState<string[]>(['auto'])
   const [user, setUser] = useState<any>(null)
   const [isBackendWaking, setIsBackendWaking] = useState(true)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false)
 
   useEffect(() => {
     // Check backend health on mount
@@ -45,10 +49,24 @@ function App() {
   }, [])
 
   const handleLogout = async () => {
-    await authApi.logout()
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_data')
-    setUser(null)
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      // Always clear local storage and user state
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_data')
+      setUser(null)
+      setShowAdminDashboard(false)
+    }
+  }
+
+  const handleAuthSuccess = (userData: any, token: string) => {
+    localStorage.setItem('auth_token', token)
+    localStorage.setItem('user_data', JSON.stringify(userData))
+    setUser(userData)
+    setShowAuthModal(false)
   }
 
   const handleLanguageToggle = (langCode: string) => {
@@ -74,9 +92,19 @@ function App() {
   return (
     <>
       <BackendWakeupModal isWakingUp={isBackendWaking} />
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onAuthSuccess={handleAuthSuccess}
+      />
       
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} user={user} onLogout={handleLogout} />
+        <Header 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+          user={user} 
+          onLogout={handleLogout}
+          onSignInClick={() => setShowAuthModal(true)}
+        />
         
         <div className="flex-1 flex overflow-hidden">
           <Sidebar 
@@ -88,7 +116,32 @@ function App() {
           />
           
           <main className="flex-1 flex flex-col">
-            <ChatInterface preferredLanguages={preferredLanguages} user={user} onUserUpdate={setUser} />
+            {/* Admin Dashboard Toggle */}
+            {user?.is_admin && (
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold">👑</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">Admin Access</p>
+                    <p className="text-white/80 text-xs">You have admin privileges</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAdminDashboard(!showAdminDashboard)}
+                  className="px-4 py-2 bg-white text-purple-600 font-semibold rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105"
+                >
+                  {showAdminDashboard ? 'Back to Chat' : 'View Dashboard'}
+                </button>
+              </div>
+            )}
+            
+            {showAdminDashboard && user?.is_admin ? (
+              <AdminDashboard />
+            ) : (
+              <ChatInterface preferredLanguages={preferredLanguages} user={user} onUserUpdate={setUser} />
+            )}
           </main>
         </div>
       </div>
