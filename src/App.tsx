@@ -15,7 +15,9 @@ function App() {
     // Check backend health on mount
     const initializeBackend = async () => {
       const startTime = Date.now()
-      const minDisplayTime = 12000 // Show for at least 12 seconds (10-15 range)
+      // Random display time between 10-60 seconds for variety
+      const minDisplayTime = Math.floor(Math.random() * (60000 - 10000 + 1)) + 10000
+      console.log(`Loading modal will display for ${minDisplayTime / 1000} seconds`)
       
       const isHealthy = await waitForBackend()
       
