@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Users, MessageSquare, TrendingUp, Activity, Globe, BarChart3 } from 'lucide-react'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://wazobia-agent-backend-1.onrender.com'
+
 interface AdminStats {
   total_users: number
   active_users: number
@@ -24,7 +26,7 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/admin/stats`, {
+      const response = await fetch(`${API_BASE_URL}/auth/admin/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
