@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Users, MessageSquare, TrendingUp, Activity, Globe, Calendar, BarChart3 } from 'lucide-react'
+import { Users, MessageSquare, TrendingUp, Activity, Globe, BarChart3 } from 'lucide-react'
 
 interface AdminStats {
   total_users: number
