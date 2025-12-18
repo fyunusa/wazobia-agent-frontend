@@ -2,14 +2,28 @@ import { useState, useEffect } from 'react'
 import ChatInterface from './components/ChatInterface'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
-import { authApi } from './services/api'
+import BackendWakeupModal from './components/BackendWakeupModal'
+import { authApi, waitForBackend } from './services/api'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [preferredLanguages, setPreferredLanguages] = useState<string[]>(['auto'])
   const [user, setUser] = useState<any>(null)
+  const [isBackendWaking, setIsBackendWaking] = useState(true)
 
   useEffect(() => {
+    // Check backend health on mount
+    const initializeBackend = async () => {
+      const isHealthy = await waitForBackend()
+      setIsBackendWaking(false)
+      
+      if (!isHealthy) {
+        alert('Unable to connect to backend after multiple attempts. Please try refreshing the page.')
+      }
+    }
+
+    initializeBackend()
+
     // Check if user is logged in
     const userData = localStorage.getItem('user_data')
     if (userData) {
@@ -45,23 +59,27 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} user={user} onLogout={handleLogout} />
+    <>
+      <BackendWakeupModal isWakingUp={isBackendWaking} />
       
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)}
-          preferredLanguages={preferredLanguages}
-          onLanguageToggle={handleLanguageToggle}
-          user={user}
-        />
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} user={user} onLogout={handleLogout} />
         
-        <main className="flex-1 flex flex-col">
-          <ChatInterface preferredLanguages={preferredLanguages} user={user} onUserUpdate={setUser} />
-        </main>
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar 
+            isOpen={sidebarOpen} 
+            onClose={() => setSidebarOpen(false)}
+            preferredLanguages={preferredLanguages}
+            onLanguageToggle={handleLanguageToggle}
+            user={user}
+          />
+          
+          <main className="flex-1 flex flex-col">
+            <ChatInterface preferredLanguages={preferredLanguages} user={user} onUserUpdate={setUser} />
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

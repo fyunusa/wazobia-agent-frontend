@@ -49,6 +49,46 @@ export const chatApi = {
   }
 }
 
+// Backend health check with timeout
+export const checkBackendHealth = async (timeoutMs: number = 10000): Promise<boolean> => {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+    
+    const response = await fetch(`${API_BASE_URL}`, {
+      method: 'GET',
+      signal: controller.signal,
+    })
+    
+    clearTimeout(timeoutId)
+    return response.ok
+  } catch (error) {
+    return false
+  }
+}
+
+// Poll backend until it's awake
+export const waitForBackend = async (
+  maxAttempts: number = 20,
+  delayMs: number = 3000
+): Promise<boolean> => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    console.log(`Checking backend health... Attempt ${attempt}/${maxAttempts}`)
+    
+    const isHealthy = await checkBackendHealth()
+    if (isHealthy) {
+      console.log('Backend is healthy!')
+      return true
+    }
+    
+    if (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+    }
+  }
+  
+  return false
+}
+
 export const authApi = {
   signup: async (email: string, username: string, password: string) => {
     const response = await api.post('/auth/signup', { email, username, password })
